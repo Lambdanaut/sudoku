@@ -16,6 +16,22 @@ puzzle_file = "puzzle"
 heuristic :: Puzzle -> Int
 heuristic puzzle = V.length $ V.filter isNothing puzzle
 
+-- Pseudocode for problem solver
+-- 
+-- 1) Add the current state to the frontier (Nothing)
+-- 2) Repeat the following
+--     a) Look for the lowest heuristic cost on the frontier. Set it as the current state.
+--     b) Switch it to the explored list.
+--     c) For every space on the board: 
+--         * Ignore it if it is filled in, illegal to fill in, or on the explored list.
+--	       * If it isn’t on the frontier, add it to the frontier. 
+--           Make the current state the parent of this state. (Add in a backtrack function) 
+--           Record the heuristic cost of this state
+--     d) Stop when: 
+--         * there are no empty spaces on the puzzle
+--         * the frontier is empty, in which case the puzzle is unsolvable
+--  3) Return the final state
+
 get_row :: Int -> Puzzle -> Row
 get_row row_index puzzle = slice (row_index * 9) (row_index * 9 + 9) puzzle
 
