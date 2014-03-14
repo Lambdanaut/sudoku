@@ -10,6 +10,8 @@ type Column = Vector (Maybe Int)
 
 puzzle_file = "puzzle"
 
+
+
 get_row :: Int -> Puzzle -> Row
 get_row row_index puzzle = slice (row_index * 9) (row_index * 9 + 9) puzzle
 
@@ -20,12 +22,13 @@ load_puzzle :: FilePath -> IO Puzzle
 load_puzzle f = do
 	read_puzzle <- readFile f
 	let stripped_puzzle = Prelude.filter (\char -> char /= '\n') read_puzzle
-	--print $ parse_puzzle read_puzzle
-	print $ get_column 8 $ parse_puzzle stripped_puzzle
-	return $ parse_puzzle read_puzzle
+	return $ parse_puzzle stripped_puzzle
 
 parse_puzzle :: String -> Puzzle
 parse_puzzle unparsed = fromList $ fmap (\x-> readMay [x]) unparsed
 
 main :: IO ()
-main = load_puzzle puzzle_file >> return ()
+main = do
+	puzzle <- load_puzzle puzzle_file
+	print puzzle
+	return ()
