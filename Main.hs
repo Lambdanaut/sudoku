@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Monad
+import Data.Maybe
 import Data.Vector as V
 import Safe
 
@@ -10,7 +11,10 @@ type Column = Vector (Maybe Int)
 
 puzzle_file = "puzzle"
 
-
+-- Fewest unfilled spots is better
+-- This is a beautiful function
+heuristic :: Puzzle -> Int
+heuristic puzzle = V.length $ V.filter isNothing puzzle
 
 get_row :: Int -> Puzzle -> Row
 get_row row_index puzzle = slice (row_index * 9) (row_index * 9 + 9) puzzle
@@ -31,4 +35,3 @@ main :: IO ()
 main = do
 	puzzle <- load_puzzle puzzle_file
 	print puzzle
-	return ()
