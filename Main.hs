@@ -60,10 +60,13 @@ load_puzzle f = do
 	let stripped_puzzle = Prelude.filter (\char -> char /= '\n') read_puzzle
 	return $ parse_puzzle stripped_puzzle
 
+load_puzzle_ :: IO Puzzle
+load_puzzle_ = load_puzzle puzzle_file
+
 parse_puzzle :: String -> Puzzle
 parse_puzzle unparsed = fromList $ fmap (\x-> readMay [x]) unparsed
 
 main :: IO ()
 main = do
-	puzzle <- load_puzzle puzzle_file
+	puzzle <- load_puzzle_
 	print puzzle
