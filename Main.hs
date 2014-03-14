@@ -5,13 +5,17 @@ import Data.Maybe
 import Data.Vector as V
 import Safe
 
-type Puzzle = Vector (Maybe Int)
-type Row    = Vector (Maybe Int)
-type Column = Vector (Maybe Int)
+-- The Sudoku Puzzle is represented as a 1-Dimensional array containing Maybes.
+-- A "Nothing" value is an unfilled square.
+-- A "Just x" value is a filled in square of value "x".
+type Puzzle = Vector Square
+type Row    = Vector Square
+type Column = Vector Square
+type Square = Maybe Int
 
 puzzle_file = "puzzle"
 
--- Fewest unfilled spots is better
+-- Fewest unfilled squares is better
 -- This is a beautiful function
 heuristic :: Puzzle -> Int
 heuristic puzzle = V.length $ V.filter isNothing puzzle
@@ -32,11 +36,23 @@ heuristic puzzle = V.length $ V.filter isNothing puzzle
 --         * the frontier is empty, in which case the puzzle is unsolvable
 --  3) Return the final state
 
-get_row :: Int -> Puzzle -> Row
-get_row row_index puzzle = slice (row_index * 9) (row_index * 9 + 9) puzzle
+legal_move :: Puzzle -> Int -> Int -> Int -> Bool
+legal_move puzzle move_value row column = empty_square && not value_conflicts
+  where
+	square_value    = get_index puzzle row column
+	square_row      = get_row puzzle row
+	square_column   = get_column puzzle column
+	empty_square    = isNothing square_value
+	value_conflicts = V.elem (Just move_value) (square_row V.++ square_column)
 
-get_column :: Int -> Puzzle -> Column
-get_column column_index puzzle = generate 9 (\x -> puzzle ! ((x * 9) + column_index) )
+get_index :: Puzzle -> Int -> Int -> Square
+get_index puzzle row column = puzzle ! (row * 9 + column)
+
+get_row :: Puzzle -> Int -> Row
+get_row puzzle row_index = slice (row_index * 9) (row_index * 9 + 9) puzzle
+
+get_column :: Puzzle -> Int -> Column
+get_column puzzle column_index = generate 9 (\x -> puzzle ! ((x * 9) + column_index) )
 
 load_puzzle :: FilePath -> IO Puzzle
 load_puzzle f = do
