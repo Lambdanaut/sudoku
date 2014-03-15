@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Monad
+import Control.Monad.State.Lazy
 import Data.Maybe
 import Data.Vector as V
 import Safe
@@ -22,7 +23,7 @@ heuristic puzzle = V.length $ V.filter isNothing puzzle
 
 -- Pseudocode for problem solver
 -- 
--- 1) Add the current state to the frontier (Nothing)
+-- 1) Add the current state to the frontier  *
 -- 2) Repeat the following
 --     a) Look for the lowest heuristic cost on the frontier. Set it as the current state.
 --     b) Switch it to the explored list.
@@ -35,6 +36,28 @@ heuristic puzzle = V.length $ V.filter isNothing puzzle
 --         * there are no empty spaces on the puzzle
 --         * the frontier is empty, in which case the puzzle is unsolvable
 --  3) Return the final state
+
+data SolveState = SolveState {
+	  ss_puzzle   :: Puzzle
+	, ss_explored :: Vector Puzzle
+	, ss_frontier :: Vector Puzzle
+} deriving Show
+
+-- Gets the value from running the stateful _solve function
+solve :: Puzzle -> Puzzle
+solve starting_puzzle = fst $ runState _solve solve_state
+        -- The beginning state for the problem. Adds the current puzzle to the frontier. 
+  where solve_state = SolveState starting_puzzle V.empty (V.singleton starting_puzzle)
+
+_solve :: State SolveState Puzzle
+_solve = do
+
+	return $ fromList []
+  		
+
+
+solved :: Puzzle -> Bool
+solved puzzle = V.all isJust puzzle 
 
 legal_move :: Puzzle -> Int -> Int -> Int -> Bool
 legal_move puzzle move_value row column = empty_square && not value_conflicts
