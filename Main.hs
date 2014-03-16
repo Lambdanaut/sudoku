@@ -37,10 +37,10 @@ puzzle_file = "puzzle"
 -- Takes an unsolved puzzle. Returns a solved puzzle
 solve :: Puzzle -> Puzzle
 -- The beginning state for the problem. Adds the current puzzle to the frontier. 
-solve puzzle = _solve puzzle S.empty (S.fromList [puzzle])
+solve puzzle = _solve S.empty (S.fromList [puzzle])
 
-_solve :: Puzzle -> S.Set Puzzle -> S.Set Puzzle -> Puzzle
-_solve puzzle explored frontier = V.fromList []
+_solve :: S.Set Puzzle -> S.Set Puzzle -> Puzzle
+_solve explored frontier = if done_check then lowest_h else _solve explored_2 frontier_3
   where
 	-- TODO: Fail if the frontier is empty
 
@@ -48,22 +48,22 @@ _solve puzzle explored frontier = V.fromList []
 	frontier_h = S.map (\puzzle -> (puzzle, heuristic puzzle) ) frontier
 	lowest_h = fst $ Data.Foldable.minimumBy (\(_, h1) (_, h2) -> compare h1 h2) frontier_h
 
+	-- Check if we're done yet
+	done_check = solved lowest_h || S.null frontier
+
 	-- Switch the current puzzle from the frontier to the explored list
-	new_frontier = S.delete lowest_h frontier
-	new_explored = S.insert lowest_h explored
+	frontier_2 = S.delete lowest_h frontier
+	explored_2 = S.insert lowest_h explored
 
 	-- Build a list of all possible legal board moves and the states they move to
 	magic_grid =  [(row, column) | row <- [0..8], column <- [0..8] ]
-	possible_moves = map (\(row, column) -> map ((set_index lowest_h row column).Just) $ legal_moves lowest_h row column) magic_grid
+	possible_moves = S.fromList $ concat $ map (\(row, column) -> map ((set_index lowest_h row column).Just) $ legal_moves lowest_h row column) magic_grid
 
+	-- Ignore the move if it has already been explored
+	unexplored_possible_moves = S.filter (\move -> S.notMember move explored_2) possible_moves
 
-	-- Add future state data to all possible moves
-
-
-	-- Filter out all moves that lead to states that have already been explored
-
-	-- Continue to the next state
-	--next_state = _solve lowest_h NEW_EXPLORED_HERE NEW_FRONTIER_HERE
+	-- Add the newfound moves to the frontier
+	frontier_3 = S.union frontier_2 unexplored_possible_moves
 
 
 solved :: Puzzle -> Bool
@@ -116,6 +116,9 @@ parse_puzzle unparsed = V.fromList $ fmap (\x-> readMay [x]) unparsed
 unJust :: Square -> Int
 unJust (Just x) = x
 unJust Nothing  = 0
+
+show_puzzle :: Puzzle -> String
+show_puzzle puzzle = concat.V.toList $ V.map (\square -> if unJust square == 0 then " " else show $ unJust square ) puzzle
 
 main :: IO ()
 main = do
