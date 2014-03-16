@@ -2,6 +2,7 @@ module Main where
 
 import Control.Monad
 import Data.List
+import Data.List.Split (chunksOf)
 import Data.Foldable (minimumBy)
 import qualified Data.Set as S
 import Data.Maybe
@@ -118,9 +119,10 @@ unJust (Just x) = x
 unJust Nothing  = 0
 
 show_puzzle :: Puzzle -> String
-show_puzzle puzzle = concat.V.toList $ V.map (\square -> if unJust square == 0 then " " else show $ unJust square ) puzzle
+show_puzzle puzzle = concat.map ('\n':) $ chunksOf 9 single_line_puzzle
+	where single_line_puzzle = V.toList $ V.map (\square -> if unJust square == 0 then ' ' else head $ show $ unJust square ) puzzle
 
 main :: IO ()
 main = do
 	puzzle <- load_puzzle_
-	print puzzle
+	putStrLn $ show_puzzle $ solve puzzle
