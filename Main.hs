@@ -1,12 +1,10 @@
 module Main where
 
 import Control.Monad
-import Control.Monad.State.Lazy
+import Data.List
 import Data.Maybe
 import qualified Data.Vector as V
 import Safe
-
-import System.IO.Unsafe
 
 -- The Sudoku Puzzle is represented as a 1-Dimensional array containing Maybes.
 -- A "Nothing" value is an unfilled square.
@@ -40,46 +38,42 @@ heuristic puzzle = V.length $ V.filter isNothing puzzle
 --  3) Return the final state
 
 -- Takes an unsolved puzzle. Returns a solved puzzle
-solve :: Puzzle -> Puzzle
+--solve :: Puzzle -> Puzzle
 -- The beginning state for the problem. Adds the current puzzle to the frontier. 
-solve puzzle = _solve puzzle V.empty (V.singleton puzzle)
+solve puzzle = _solve puzzle [] [puzzle]
 
-_solve :: Puzzle -> V.Vector Puzzle -> V.Vector Puzzle -> Puzzle
-_solve puzzle explored frontier = V.fromList []
+--_solve :: Puzzle -> [Puzzle] -> [Puzzle] -> Puzzle
+_solve puzzle explored frontier = magic_grid --V.fromList []
   where
 	-- TODO: Fail if the frontier is empty
 
 	-- Get the best scoring heuristic on the frontier. This is our new current state.
-	frontier_h = V.map (\puzzle -> (puzzle, heuristic puzzle) ) frontier
-	lowest_h = fst $ V.minimumBy (\(_, h1) (_, h2) -> compare h1 h2) frontier_h
+	frontier_h = map (\puzzle -> (puzzle, heuristic puzzle) ) frontier
+	lowest_h = fst $ minimumBy (\(_, h1) (_, h2) -> compare h1 h2) frontier_h
 
 	-- Switch the current puzzle to the explored list
-	explored = V.cons lowest_h explored
-	frontier = V.filter (== lowest_h) frontier  -- Very inefficient. Should just remove an index instead of filtering for a puzzle.
+	new_explored = lowest_h : explored
+	new_frontier = filter (/= lowest_h) frontier  -- Very inefficient. Should just remove an index instead of filtering out the puzzle.
 
-	-- Build a list of all possible legal board moves
-	magic_grid = [(row, column) | column <- [0..8], row <- [0..8] ]
-	possible_moves = map (\(row, column) -> legal_moves lowest_h row column) magic_grid
+	-- Build a list of all possible legal board moves and the states they move to
+	magic_grid =  [(row, column) | row <- [0..8], column <- [0..8] ]
+	possible_move_states = map (\(row, column) -> legal_moves lowest_h row column) magic_grid
+	--possible_move_states = map (\(row, column) -> map ((set_index lowest_h row column).Just) $ legal_moves lowest_h row column) magic_grid
 
 	-- Add future state data to all possible moves
+
 
 	-- Filter out all moves that lead to states that have already been explored
 
 	-- Continue to the next state
-	--_solve lowest_h NEW_EXPLORED_HERE NEW_FRONTIER_HERE
+	--next_state = _solve lowest_h NEW_EXPLORED_HERE NEW_FRONTIER_HERE
 
 
 solved :: Puzzle -> Bool
 solved puzzle = V.all isJust puzzle 
 
 legal_move :: Puzzle -> Int -> Int -> Int -> Bool
-legal_move puzzle move_value row column = empty_square && not value_conflicts
-  where
-	square_value    = get_index puzzle row column
-	square_row      = get_row puzzle row
-	square_column   = get_column puzzle column
-	empty_square    = isNothing square_value
-	value_conflicts = V.elem (Just move_value) (square_row V.++ square_column)
+legal_move puzzle move_value row column = elem move_value $ legal_moves puzzle row column
 
 -- Returns a list of legal moves for a given square
 legal_moves :: Puzzle -> Int -> Int -> [Int]
@@ -95,11 +89,11 @@ legal_moves puzzle row column
 get_index :: Puzzle -> Int -> Int -> Square
 get_index puzzle row column = puzzle V.! (row * 9 + column)
 
---set_index :: Puzzle -> Int -> Int -> Square
---set_index puzzle row column = puzzle V.! (row * 9 + column)
+set_index :: Puzzle -> Int -> Int -> Square -> Puzzle
+set_index puzzle row column square_value = puzzle V.// [(row * 9 + column, square_value)]
 
 get_row :: Puzzle -> Int -> Row
-get_row puzzle row_index = V.slice (row_index * 9) (row_index * 9 + 9) puzzle
+get_row puzzle row_index = V.slice (row_index * 9) 9 puzzle
 
 get_column :: Puzzle -> Int -> Column
 get_column puzzle column_index = V.generate 9 (\x -> puzzle V.! ((x * 9) + column_index) )
