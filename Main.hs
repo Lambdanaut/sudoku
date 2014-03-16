@@ -2,9 +2,11 @@ module Main where
 
 import Control.Monad
 import Data.List
+import Data.Foldable (minimumBy)
+import qualified Data.Set as S
 import Data.Maybe
 import qualified Data.Vector as V
-import Safe
+import Safe (readMay)
 
 -- The Sudoku Puzzle is represented as a 1-Dimensional array containing Maybes.
 -- A "Nothing" value is an unfilled square.
@@ -16,14 +18,9 @@ type Square = Maybe Int
 
 puzzle_file = "puzzle"
 
--- Fewest unfilled squares is better
--- This is a beautiful function
-heuristic :: Puzzle -> Int
-heuristic puzzle = V.length $ V.filter isNothing puzzle
-
 -- Pseudocode for problem solver
 -- 
--- 1) Add the current state to the frontier  *** done
+-- 1) Add the current state to the frontier
 -- 2) Repeat the following
 --     a) Look for the lowest heuristic cost on the frontier. Set it as the current state.
 --     b) Switch it to the explored list.
@@ -38,27 +35,27 @@ heuristic puzzle = V.length $ V.filter isNothing puzzle
 --  3) Return the final state
 
 -- Takes an unsolved puzzle. Returns a solved puzzle
---solve :: Puzzle -> Puzzle
+solve :: Puzzle -> Puzzle
 -- The beginning state for the problem. Adds the current puzzle to the frontier. 
-solve puzzle = _solve puzzle [] [puzzle]
+solve puzzle = _solve puzzle S.empty (S.fromList [puzzle])
 
---_solve :: Puzzle -> [Puzzle] -> [Puzzle] -> Puzzle
-_solve puzzle explored frontier = magic_grid --V.fromList []
+_solve :: Puzzle -> S.Set Puzzle -> S.Set Puzzle -> Puzzle
+_solve puzzle explored frontier = V.fromList []
   where
 	-- TODO: Fail if the frontier is empty
 
 	-- Get the best scoring heuristic on the frontier. This is our new current state.
-	frontier_h = map (\puzzle -> (puzzle, heuristic puzzle) ) frontier
-	lowest_h = fst $ minimumBy (\(_, h1) (_, h2) -> compare h1 h2) frontier_h
+	frontier_h = S.map (\puzzle -> (puzzle, heuristic puzzle) ) frontier
+	lowest_h = fst $ Data.Foldable.minimumBy (\(_, h1) (_, h2) -> compare h1 h2) frontier_h
 
-	-- Switch the current puzzle to the explored list
-	new_explored = lowest_h : explored
-	new_frontier = filter (/= lowest_h) frontier  -- Very inefficient. Should just remove an index instead of filtering out the puzzle.
+	-- Switch the current puzzle from the frontier to the explored list
+	new_frontier = S.delete lowest_h frontier
+	new_explored = S.insert lowest_h explored
 
 	-- Build a list of all possible legal board moves and the states they move to
 	magic_grid =  [(row, column) | row <- [0..8], column <- [0..8] ]
-	possible_move_states = map (\(row, column) -> legal_moves lowest_h row column) magic_grid
-	--possible_move_states = map (\(row, column) -> map ((set_index lowest_h row column).Just) $ legal_moves lowest_h row column) magic_grid
+	possible_moves = map (\(row, column) -> map ((set_index lowest_h row column).Just) $ legal_moves lowest_h row column) magic_grid
+
 
 	-- Add future state data to all possible moves
 
@@ -71,6 +68,11 @@ _solve puzzle explored frontier = magic_grid --V.fromList []
 
 solved :: Puzzle -> Bool
 solved puzzle = V.all isJust puzzle 
+
+-- Fewest unfilled squares is better
+-- This is a beautiful function
+heuristic :: Puzzle -> Int
+heuristic puzzle = V.length $ V.filter isNothing puzzle
 
 legal_move :: Puzzle -> Int -> Int -> Int -> Bool
 legal_move puzzle move_value row column = elem move_value $ legal_moves puzzle row column
